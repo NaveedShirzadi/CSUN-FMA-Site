@@ -246,6 +246,20 @@
   .activity-row{ display:flex; justify-content:space-between; gap:12px; padding:10px 14px; border-bottom:1px solid var(--line); font-size:13.5px; }
   .activity-row:last-child{ border-bottom:none; }
   .activity-row .n{ color:var(--gray-700); }
+  .link-btn{ background:none; border:none; padding:0; color:var(--blue); font-size:13px; font-weight:700; text-decoration:underline; cursor:pointer; font-family:inherit; }
+  .event-detail h3{ font-family:var(--font-display); font-size:26px; line-height:1.15; margin:4px 0 10px; }
+  .event-detail-photo{ display:block; width:100%; aspect-ratio:16/10; object-fit:cover; margin-bottom:14px; }
+  .event-detail-date{ font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold); margin:0; }
+  .event-detail-facts{ list-style:none; padding:0; margin:12px 0; font-size:14px; }
+  .event-detail-facts li{ padding:4px 0; }
+  .event-detail-facts strong{ display:inline-block; min-width:56px; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--gray-700); }
+  .event-detail-text{ font-size:14px; line-height:1.55; color:var(--gray-700); white-space:pre-line; margin:10px 0; }
+  .event-detail-label{ font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gray-700); margin:16px 0 6px; }
+  .event-detail-speakers{ list-style:none; padding:0; margin:0 0 8px; font-size:14px; }
+  .event-detail-speakers li{ padding:7px 0; border-top:1px solid var(--line); }
+  .event-detail-speakers li span{ display:block; font-size:12.5px; color:var(--gray-700); }
+  .event-detail-note{ font-size:12.5px; font-style:italic; color:var(--gray-700); margin:12px 0; }
+  .event-detail a{ color:var(--blue); text-decoration:underline; }
   .dues-section[data-empty="true"]{ display:none; }
   .connect-officers[data-empty="true"]{ display:none; }
   .is-admin .connect-officers[data-empty="true"]{ display:block; }
@@ -1174,7 +1188,7 @@ document.addEventListener("click", (e)=>{
     openHeroEdit, openAboutEdit, openTutoringEdit, openAdminLogin, adminLogout, closeModal,
     openModal, openOfficerModal, openTierModal, removeTier, openOfferingModal, removeOffering,
     removeResponse, removeEditor, removeItem, shiftMonth, goToTab,
-    openFooterEdit, openLogoEdit, openGalleryUpload, openMotmEdit, openReportModal, openDashSectionsEdit, openPageTitlesEdit, openGroupPhotoUpload, importStarterReports, openEventModal, importStarterEvents, openMeetingDefaultsEdit, restoreInternationalTier, openDuesEdit, openConnectOfficersEdit, refreshActivity, toggleTechMeetings
+    openFooterEdit, openLogoEdit, openGalleryUpload, openMotmEdit, openReportModal, openDashSectionsEdit, openPageTitlesEdit, openGroupPhotoUpload, importStarterReports, openEventModal, importStarterEvents, openMeetingDefaultsEdit, restoreInternationalTier, openDuesEdit, openConnectOfficersEdit, refreshActivity, toggleTechMeetings, openEventDetails
   };
   const fn = actions[el.dataset.action];
   if(!fn) return;
@@ -1863,7 +1877,10 @@ function eventCardHtml(e){
       ${speakers.length ? `<ul class="speakers">${speakers.map(s=>`<li>${s.name}${s.company ? ` <span class="co">(${s.company})</span>` : ""}</li>`).join("")}</ul>` : ""}
       ${e.notes ? `<div class="note">${e.notes}</div>` : ""}
       <div class="foot">
-        <span class="status-pill ${statusClass}">${status}</span>
+        <span style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          ${status !== "Open" ? `<span class="status-pill ${statusClass}">${status}</span>` : ""}
+          ${status !== "No meeting" ? `<button class="btn btn-outline-navy btn-small" data-action="openEventDetails" data-args='[${JSON.stringify(e.id)}]'>View details</button>` : ""}
+        </span>
         <span style="display:flex; gap:6px;">
           <button class="btn btn-outline-navy btn-small admin-only" data-action="openEventModal" data-args='[${JSON.stringify(e.id)}]'>Edit</button>
           <button class="btn btn-danger btn-small admin-only" data-action="removeItem" data-args='["events", ${globalIndex}, true]'>Remove</button>
@@ -1887,6 +1904,33 @@ async function importStarterEvents(key){
     alert("Couldn't import: " + err.message);
   }
 }
+function longDate(iso){
+  if(!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+}
+function openEventDetails(id){
+  const e = events.find(x => x.id === id);
+  if(!e) return;
+  const status = eventStatusOf(e);
+  const statusClass = { "Cancelled":"cancelled", "No meeting":"nomeeting" }[status] || "";
+  const when = eventWhenWhere(e);
+  const speakers = parseSpeakers(e.speakers);
+  const body = document.getElementById("modalBody");
+  body.innerHTML = `
+    <div class="event-detail">
+      ${e.photoUrl ? `<img class="event-detail-photo" src="${escAttr(e.photoUrl)}" alt="${escAttr(e.name)}">` : ""}
+      <p class="event-detail-date">${escHtml(longDate(e.date))}</p>
+      <h3>${escHtml(e.name)}</h3>
+      ${status !== "Open" ? `<span class="status-pill ${statusClass}">${escHtml(status)}</span>` : ""}
+      ${(when.time || when.location) ? `<ul class="event-detail-facts">${when.time ? `<li><strong>Time</strong> ${escHtml(when.time)}</li>` : ""}${when.location ? `<li><strong>Where</strong> ${escHtml(when.location)}</li>` : ""}</ul>` : ""}
+      ${e.description ? `<p class="event-detail-text">${richText(e.description)}</p>` : ""}
+      ${speakers.length ? `<p class="event-detail-label">Guest speakers</p><ul class="event-detail-speakers">${speakers.map(s => `<li>${escHtml(s.name)}${s.company ? `<span>${escHtml(s.company)}</span>` : ""}</li>`).join("")}</ul>` : ""}
+      ${e.notes ? `<p class="event-detail-note">${richText(e.notes)}</p>` : ""}
+      <div class="modal-actions"><button type="button" class="btn btn-gold" data-action="closeModal">Close</button></div>
+    </div>`;
+  document.getElementById("modalBackdrop").classList.add("open");
+}
 function openEventModal(id){
   const existing = id ? events.find(e=>e.id===id) : null;
   const q = s => String(s||"").replace(/"/g,"&quot;");
@@ -1901,6 +1945,7 @@ function openEventModal(id){
       <div class="field"><label>Status</label><select name="status">${EVENT_STATUSES.map(s=>`<option ${(existing ? eventStatusOf(existing) : "Open")===s ? "selected" : ""}>${s}</option>`).join("")}</select></div>
       <div class="field"><label>Guest speakers (optional, one per line, company after a pipe, like: Jane Doe | Bank of America)</label><textarea name="speakers" rows="4">${existing?.speakers||""}</textarea></div>
       <div class="field"><label>Notes (optional)</label><input name="notes" value="${q(existing?.notes)}"></div>
+      <div class="field"><label>Description (optional, shown when someone clicks View details)</label><textarea name="description" rows="4">${escHtml(existing?.description)}</textarea></div>
       <div class="field"><label>Photo (optional)</label><input name="photo" type="file" accept="image/*"></div>
       ${existing?.photoUrl ? `<p style="font-size:11px; color:var(--gray-700); margin:-6px 0 12px;">Leave blank to keep the current photo.</p>` : ""}
       <div class="modal-actions">
@@ -1922,6 +1967,7 @@ function openEventModal(id){
       status: data.get("status") || "Open",
       speakers: data.get("speakers") || "",
       notes: data.get("notes") || "",
+      description: data.get("description") || "",
     };
     const photo = data.get("photo");
     try{
@@ -1981,7 +2027,7 @@ function renderEvents(){
       <div class="ledger-row">
         <span class="entry-no">${pad(i+1)}</span>
         <span class="label" style="flex:1">${e.name}<span class="tag">${fmtDate(e.date)}${e.date===todayISO() ? " · Today" : ""}</span></span>
-        <span class="value">${eventStatusOf(e)}</span>
+        <span class="value">${eventStatusOf(e) !== "Open" ? eventStatusOf(e) + (eventStatusOf(e) === "No meeting" ? "" : " &nbsp;") : ""}${eventStatusOf(e) !== "No meeting" ? `<button type="button" class="link-btn" data-action="openEventDetails" data-args='[${JSON.stringify(e.id)}]'>View details</button>` : ""}</span>
       </div>`).join("") : `<div class="empty">No events yet.</div>`;
   }
   const dashPastEl = document.getElementById("dashEventsPast");
