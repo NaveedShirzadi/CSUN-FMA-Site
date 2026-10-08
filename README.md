@@ -1,105 +1,97 @@
-# COMP 440 Course Project, Phase 1
+# CSUN FMA Website
 
-Java + Swing + MySQL. User registration and login with SQL injection prevention
-and hashed passwords.
+The website for the Financial Management Association (FMA) at California State University, Northridge.
 
-**YouTube demo:** _paste your video URL here before submitting_
+**Live site:** https://csun-fma.com (also reachable at https://csun-fma.web.app)
 
-**Team number:** _fill in, and rename the zip to COMP440_TeamNo_P1.zip_
+## What the site has
 
-## What is here
+Pages everyone can see:
+
+| Page | What it is |
+|---|---|
+| Dashboard | Welcome section, what we offer, upcoming events, recent photos |
+| About | About the chapter |
+| Events | Calendar and list of meetings, with times, rooms, and guest speakers |
+| Weekly Reports | Weekly market reports with a cover image and a PDF for each |
+| Officers | President and Vice President, plus a group photo of the rest of the board |
+| Membership | Membership options, how to pay dues, and the membership form |
+| Resources | Downloadable files and links for members |
+| Connect | FMA's LinkedIn and Instagram, plus LinkedIn links for every officer |
+
+Pages that are hidden from visitors for now (editors can turn them on from the page itself): **Tutoring** and **Tech Meetings**.
+
+Pages only editors can see: **Responses**, **Activity** (visitor counts), and **Editors** (who is allowed to edit).
+
+## How it works
+
+- The whole site is one file, `index.html`, with its styles and code inside it. There is no build step and no framework.
+- It runs on Firebase: **Hosting** serves the files, **Firestore** stores the content, **Storage** holds uploaded pictures and files, and **Authentication** handles Google sign in.
+- The Firebase scripts load from Google's CDN (version 10.12.2).
+- **The content is not in this repository.** Events, officers, membership options, and the rest live in the Firebase database. Editors change them on the live site. This repository holds the code, the database rules, and the report and picture files that ship with the site.
+- The Firebase settings near the top of `index.html` are meant to be public. What protects the data is the rules in `firestore.rules` and `storage.rules`, plus the editor list.
+
+## Who can edit
+
+Anyone can read the site. To edit, you sign in with Google, and your email must be listed in the `editors` collection. The first editor is added by hand in the Firebase console. After that, editors add and remove each other from the Editors page.
+
+## Files in this repository
+
+| File or folder | What it is |
+|---|---|
+| `index.html` | The entire website |
+| `404.html` | The "page not found" page |
+| `firebase.json` | Firebase settings: what to publish and where the rules files are |
+| `.firebaserc` | Points the Firebase tools at the `csun-fma` project |
+| `firestore.rules` | Who can read and write each part of the database |
+| `storage.rules` | Who can upload to and read from file storage |
+| `reports/` | Weekly report PDFs and their cover images |
+| `dues/` | Screenshots used in the dues instructions |
+| `SETUP.md` | The original setup notes, kept for reference. Parts are out of date, for example it calls the site file `fma-site.html` |
+
+## Deploying changes
+
+You need the Firebase tools installed and to be signed in (`firebase login`). Run these from the project folder:
 
 ```
-sql/schema.sql                       database, user table, least privilege account
-db.properties                        JDBC settings, edit these
-src/p1/App.java                      entry point
-src/p1/db/Database.java              connection factory
-src/p1/model/User.java               user row
-src/p1/security/PasswordHasher.java  PBKDF2 hashing and verification
-src/p1/security/InputValidator.java  format rules for signup
-src/p1/dao/UserDao.java              all SQL, prepared statements only
-src/p1/dao/DuplicateFieldException.java
-src/p1/ui/LoginFrame.java            login window
-src/p1/ui/SignupDialog.java          registration form
-src/p1/ui/HomeFrame.java             post login window
+firebase deploy --only hosting
 ```
-
-## Setup
-
-1. Download the MySQL Connector/J jar (mysql-connector-j-x.x.x.jar) and put it in
-   a `lib/` folder in this directory.
-2. Open `sql/schema.sql` in MySQL Workbench and run it. It creates the
-   `comp440_p1` database, the `user` table, and a limited application account.
-3. Change the password in `schema.sql` and in `db.properties` so they match and
-   are not the placeholder.
-
-## Build and run
-
-Linux or macOS:
+publishes the site files (`index.html`, `reports/`, `dues/`).
 
 ```
-javac -d bin $(find src -name "*.java")
-java -cp "bin:lib/*" p1.App
+firebase deploy --only firestore:rules,hosting
 ```
-
-Windows:
+publishes the site and the database rules together. Do this whenever `firestore.rules` changes.
 
 ```
-javac -d bin src\p1\*.java src\p1\db\*.java src\p1\model\*.java src\p1\security\*.java src\p1\dao\*.java src\p1\ui\*.java
-java -cp "bin;lib/*" p1.App
+firebase deploy --only storage
+```
+publishes `storage.rules`.
+
+After a deploy, hard refresh the page (Cmd+Shift+R on a Mac) so the browser does not show the old version.
+
+## Saving changes to GitHub
+
+```
+git add -A
+git commit -m "Describe what changed"
+git push
 ```
 
-Run from this directory so `db.properties` is found.
+GitHub only stores the code. It does not update the live site. Run a Firebase deploy for that.
 
-## How the two security requirements are met
+## Where things are stored
 
-**SQL injection.** Every statement in `UserDao` is a `PreparedStatement` with `?`
-placeholders. No user value is ever concatenated into SQL text. The driver sends
-the parameter separately from the query, so the database parses the query once
-and treats the input purely as data. `InputValidator` is a second layer that
-rejects malformed input early; it is not what stops the attack.
+**Database collections:** `events`, `officers`, `membership`, `resources`, `socials`, `offerings`, `gallery`, `weeklyReports`, `tutoringRequests`, `visits`, `editors`. `joinResponses` is left over from an old sign up form that is no longer on the site.
 
-**Hashed passwords.** `PasswordHasher` uses PBKDF2 with HMAC SHA256, 210,000
-iterations, and a fresh 16 byte random salt per user. The stored column holds
-`pbkdf2_sha256$iterations$salt$hash`, roughly 90 characters. The plaintext
-password never reaches the database and never appears in a query. Login loads
-the stored hash by username and recomputes, so no password comparison happens in
-SQL.
+**Settings documents** (inside the `settings` collection): `dashboard`, `dashSections`, `about`, `footer`, `branding`, `pageTitles`, `officersPage`, `motm`, `meetingDefaults`, `duesInstructions`, `connectOfficers`, `tutoring`, `techMeetings`.
 
-Two smaller touches worth mentioning in the demo: uniqueness is enforced by the
-database constraints rather than a SELECT then INSERT, which removes the race
-condition between two simultaneous signups; and login returns the same message
-for an unknown username and a wrong password, with matching timing, so the form
-cannot be used to discover which usernames exist.
+**File storage folders:** `officers`, `branding`, `gallery`, `motm`, `events`, `resources`, `reports`.
 
-## Demo script for the video
+## Visitor counts and privacy
 
-1. Show `schema.sql` and the created table in Workbench.
-2. Sign up a normal user. Show the row appearing in Workbench with an unreadable
-   password column.
-3. Sign up a second user with the same username. Show the failure. Repeat with a
-   duplicate email, then a duplicate phone.
-4. Try a signup with mismatched password confirmation. Show the failure.
-5. Log in with the correct password. Show the home screen.
-6. Log in with the wrong password. Show the failure.
-7. The injection attempts. Type each of these and show that login still fails:
+The Activity page counts visitors using the `visits` collection. Each visit stores only a date, a page name, a time, and a random ID created in the visitor's own browser. No names, emails, or IP addresses are stored. A visitor means one browser or device, counted once per day. Editors who have signed in are not counted. Only editors can read the counts.
 
-   | Field    | Input                  |
-   |----------|------------------------|
-   | Password | `any' OR '1'='1`       |
-   | Username | `admin'--`             |
-   | Username | `foo'; DROP TABLE user;--` |
+## Custom domain
 
-   After the last one, refresh the table in Workbench to show it is still there.
-   Explain that the input was bound as a parameter, so it was searched for as a
-   literal username and never parsed as SQL.
-8. Optionally show that the application account cannot drop the table even if a
-   statement did get through.
-
-## Submission checklist
-
-- [ ] YouTube URL pasted at the top of this file
-- [ ] Team number filled in
-- [ ] `db.properties` password changed from the placeholder
-- [ ] Zip named `COMP440_TeamNo_P1.zip` with your team number
-- [ ] Zip includes `src/`, `sql/`, `lib/`, `db.properties`, and this README
+`csun-fma.com` points at Firebase Hosting through DNS records set at the domain registrar: an A record for the site and a TXT record that verifies ownership.
