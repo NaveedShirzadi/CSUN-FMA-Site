@@ -12,7 +12,7 @@ Pages everyone can see:
 |---|---|
 | Dashboard | Welcome section, what we offer, upcoming events, recent photos |
 | About | About the chapter |
-| Events | Calendar and list of meetings, with times, rooms, and guest speakers |
+| Events | Calendar and list of meetings, with times, rooms, guest speakers, and a details window for each |
 | Weekly Reports | Weekly market reports with a cover image and a PDF for each |
 | Officers | President and Vice President, plus a group photo of the rest of the board |
 | Membership | Membership options, how to pay dues, and the membership form |
@@ -33,7 +33,7 @@ Pages only editors can see: **Responses**, **Activity** (visitor counts), and **
 
 ## Who can edit
 
-Anyone can read the site. To edit, you sign in with Google, and your email must be listed in the `editors` collection. The first editor is added by hand in the Firebase console. After that, editors add and remove each other from the Editors page.
+Anyone can read the site. To edit, you sign in with Google, and your email must be listed in the `editors` collection. The first editor is added by hand in the Firebase console. After that, editors add and remove each other from the Editors page. Uploading pictures and files is limited to editors as well, and the file storage rules check the same editor list.
 
 ## Files in this repository
 
