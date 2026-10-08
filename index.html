@@ -135,9 +135,6 @@
   .stat{ border-left:3px solid var(--gold); padding-left:1rem; }
   .stat .value{ font-family:var(--font-display); font-size:2.1rem; display:block; color:var(--gold); }
   .stat .label{ color:var(--gray-100); font-size:0.9rem; }
-  .ticker-item{ text-align:center; padding:14px 8px; background:var(--paper); border:1px solid var(--line); }
-  .ticker-item .num{ font-family:var(--font-display); font-size:22px; color:var(--navy); }
-  .ticker-item .lbl{ font-size:10.5px; color:var(--gray-700); text-transform:uppercase; letter-spacing:.04em; margin-top:4px; }
 
   /* ---------------- Section shell ---------------- */
   .section{ padding:56px 0; }
@@ -470,12 +467,6 @@
       <div class="wrap">
         <div class="section-head"><p class="kicker" id="dashHighlightsKicker">This semester</p><h2 id="dashHighlightsHeading">Recent highlights</h2></div>
         <div class="gallery-grid" id="dashGalleryGrid"></div>
-      </div>
-    </div>
-    <div class="section">
-      <div class="wrap">
-        <div class="section-head"><p class="kicker" id="dashLiveKicker">Live Numbers</p><h2 id="dashLiveHeading" style="font-size:1.6rem;">Right now at FMA</h2></div>
-        <div id="tickerRow" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:1rem;"></div>
       </div>
     </div>
     <div class="section">
@@ -996,9 +987,7 @@ let dashSections = {
   offerKicker: "What we offer",
   offerHeading: "Everything the classroom doesn't teach you",
   highlightsKicker: "This semester",
-  highlightsHeading: "Recent highlights",
-  liveKicker: "Live Numbers",
-  liveHeading: "Right now at FMA"
+  highlightsHeading: "Recent highlights"
 };
 let pageTitles = {
   aboutKicker: "About", aboutHeading: "The people and purpose behind CSUN FMA",
@@ -1251,16 +1240,6 @@ function renderDashboard(){
   document.getElementById("dashHeading").textContent = heroText.heading;
   document.getElementById("dashBody").textContent = heroText.body;
 
-  const upcoming = events.filter(e=>e.date >= todayISO()).sort((a,b)=>a.date.localeCompare(b.date));
-  const stats = [
-    { num: officers.length, lbl:"Officers" },
-    { num: events.length, lbl:"Events" },
-    { num: upcoming.length, lbl:"Upcoming" },
-    { num:"100+", lbl:"Members" },
-  ];
-  document.getElementById("tickerRow").innerHTML = stats.map(s=>`
-    <div class="ticker-item"><div class="num">${s.num}</div><div class="lbl">${s.lbl}</div></div>`).join("");
-
   document.getElementById("dashOfficers").innerHTML = officers.length ? [...officers].sort((a,b)=>(a.order??0)-(b.order??0)).slice(0,4).map((o,i)=>`
     <div class="ledger-row">
       <span class="entry-no">${pad(i+1)}</span>
@@ -1295,14 +1274,12 @@ function openHeroEdit(){
   document.getElementById("modalBackdrop").classList.add("open");
 }
 
-/* ---------------- Dashboard section headers (What We Offer / Recent Highlights / Live Numbers) ---------------- */
+/* ---------------- Dashboard section headers (What We Offer / Recent Highlights) ---------------- */
 function renderDashSections(){
   document.getElementById("dashOfferKicker").textContent = dashSections.offerKicker;
   document.getElementById("dashOfferHeading").textContent = dashSections.offerHeading;
   document.getElementById("dashHighlightsKicker").textContent = dashSections.highlightsKicker;
   document.getElementById("dashHighlightsHeading").textContent = dashSections.highlightsHeading;
-  document.getElementById("dashLiveKicker").textContent = dashSections.liveKicker;
-  document.getElementById("dashLiveHeading").textContent = dashSections.liveHeading;
 }
 function openDashSectionsEdit(){
   const body = document.getElementById("modalBody");
@@ -1313,8 +1290,6 @@ function openDashSectionsEdit(){
       <div class="field"><label>"What We Offer" heading</label><input name="offerHeading" value="${dashSections.offerHeading.replace(/"/g,'&quot;')}" required></div>
       <div class="field"><label>"Recent Highlights" label</label><input name="highlightsKicker" value="${dashSections.highlightsKicker.replace(/"/g,'&quot;')}" required></div>
       <div class="field"><label>"Recent Highlights" heading</label><input name="highlightsHeading" value="${dashSections.highlightsHeading.replace(/"/g,'&quot;')}" required></div>
-      <div class="field"><label>"Live Numbers" label</label><input name="liveKicker" value="${dashSections.liveKicker.replace(/"/g,'&quot;')}" required></div>
-      <div class="field"><label>"Live Numbers" heading</label><input name="liveHeading" value="${dashSections.liveHeading.replace(/"/g,'&quot;')}" required></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-outline-navy" data-action="closeModal">Cancel</button>
         <button type="submit" class="btn btn-gold">Save</button>
@@ -1330,8 +1305,6 @@ function openDashSectionsEdit(){
         offerHeading: data.get("offerHeading"),
         highlightsKicker: data.get("highlightsKicker"),
         highlightsHeading: data.get("highlightsHeading"),
-        liveKicker: data.get("liveKicker"),
-        liveHeading: data.get("liveHeading"),
       });
       closeModal();
     } catch(err){
